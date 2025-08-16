@@ -14,6 +14,12 @@ const router = createRouter({
       name: 'TaskList',
       component: () => import('@/components/TaskList.vue'),
       meta: { requiresAuth: true }
+    },
+    {
+      path: '/register',
+      name: 'Register',
+      component: () => import('@/components/Register.vue'),
+      meta: { requiresAuth: true }
     }
   ],
 })
