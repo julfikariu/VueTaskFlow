@@ -31,3 +31,4 @@ coverage
 /*.code-workspace
 /.vscode
 /index_login_ui.html
+/package-lock.json
