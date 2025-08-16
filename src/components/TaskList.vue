@@ -27,14 +27,48 @@
             @change="toggleComplete(task)"
             class="form-checkbox w-5 h-5 cursor-pointer"
           />
+  <!-- Inline edit mode -->
+        <template v-if="editingTaskId === task.id">
+          <input
+            v-model="editedTitle"
+            @keyup.enter="saveEdit(task)"
+            @blur="saveEdit(task)"
+            class="border rounded px-2 py-1 text-sm"
+            autofocus
+          />
+        </template>
+
+        <!-- Normal view -->
+        <template v-else>
           <span
             :class="{ 'line-through text-gray-500': task.completed }"
             class="text-gray-800 font-medium"
           >
             {{ task.title }}
           </span>
+        </template>
         </div>
         <div class="flex items-center gap-2">
+           <!-- Edit button -->
+         <!-- Edit button -->
+        <button
+          @click="editTask(task)"
+          class="text-blue-600 hover:text-blue-800 transition cursor-pointer flex items-center gap-2"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="w-5 h-5"
+          >
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+          </svg>
+        </button>
           <button
             @click="deleteTask(task)"
             class="text-red-600 hover:text-red-800 font-semibold transition cursor-pointer flex items-center gap-2"
@@ -90,6 +124,8 @@ import { ref, onMounted } from 'vue'
 
 const tasks = ref([])
 const newTask = ref('')
+const editingTaskId = ref(null)  // 👈 define this
+const editedTitle = ref('')  
 
 const token = localStorage.getItem('token')
 
@@ -134,6 +170,28 @@ async function toggleComplete(task) {
     Object.assign(task, res.data.data)
   } catch (e) {
     console.error('Toggle complete error:', e)
+  }
+}
+
+// New edit method
+function editTask(task) {
+  editingTaskId.value = task.id
+  editedTitle.value = task.title
+}
+
+async function saveEdit(task) {
+  if (!editedTitle.value.trim()) {
+    editingTaskId.value = null
+    return
+  }
+
+  try {
+    await api.put(`/tasks/${task.id}`, { title: editedTitle.value })
+    task.title = editedTitle.value
+  } catch (e) {
+    console.error('Edit task error:', e)
+  } finally {
+    editingTaskId.value = null
   }
 }
 
