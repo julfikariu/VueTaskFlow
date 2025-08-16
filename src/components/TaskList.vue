@@ -9,23 +9,23 @@
         placeholder="Add new task..."
         class="flex-grow border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
       />
-      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700 cursor-pointer">
         Add
       </button>
     </form>
 
-    <ul>
+    <ul v-if="!loading" class="divide-y divide-gray-200">
       <li
         v-for="task in tasks"
         :key="task.id"
-        class="flex justify-between items-center border-b py-3 px-4 hover:bg-gray-100 transition"
+        class="flex justify-between items-center py-3 px-4 hover:bg-gray-100 transition"
       >
         <div class="flex items-center gap-4">
           <input
             type="checkbox"
             :checked="task.is_completed"
             @change="toggleComplete(task)"
-            class="form-checkbox w-5 h-5"
+            class="form-checkbox w-5 h-5 cursor-pointer"
           />
           <span
             :class="{ 'line-through text-gray-500': task.completed }"
@@ -56,7 +56,32 @@
         </div>
       </li>
     </ul>
+
+     <!-- Loader -->
+    <div v-else class="flex justify-center items-center py-4">
+      <svg
+        class="animate-spin h-8 w-8 text-blue-500"
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+      >
+        <circle
+          class="opacity-25"
+          cx="12"
+          cy="12"
+          r="10"
+          stroke="currentColor"
+          stroke-width="4"
+        ></circle>
+        <path
+          class="opacity-75"
+          fill="currentColor"
+          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+        ></path>
+      </svg>
+    </div>
   </div>
+
 </template>
 
 <script setup>
@@ -72,24 +97,31 @@ const api = axios.create({
   baseURL: 'http://localhost:8000/api',
   headers: { Authorization: `Bearer ${token}` },
 })
+const loading = ref(true)
 
 async function fetchTasks() {
+  loading.value = true;
   try {
     const res = await api.get('/tasks')
     tasks.value = res.data.data
   } catch (e) {
     console.error('Fetch tasks error:', e)
+  } finally {
+    loading.value = false
   }
 }
 
 async function addTask() {
   if (!newTask.value.trim()) return
+  loading.value = true
   try {
     const res = await api.post('/tasks', { title: newTask.value })
     tasks.value.push(res.data.data)
     newTask.value = ''
   } catch (e) {
     console.error('Add task error:', e)
+  } finally {
+    loading.value = false
   }
 }
 
@@ -106,11 +138,14 @@ async function toggleComplete(task) {
 }
 
 async function deleteTask(task) {
+  loading.value = true
   try {
     await api.delete(`/tasks/${task.id}`)
     tasks.value = tasks.value.filter((t) => t.id !== task.id)
   } catch (e) {
     console.error('Delete task error:', e)
+  } finally {
+    loading.value = false
   }
 }
 
