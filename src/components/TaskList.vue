@@ -1,0 +1,118 @@
+<template>
+  <div class="max-w-xl mx-auto mt-16 p-6 rounded-lg bg-white p-6 shadow-md outline outline-black/5">
+    <h1 class="text-3xl font-bold mb-6">My Tasks</h1>
+
+    <form @submit.prevent="addTask" class="flex gap-2 mb-4">
+      <input
+        v-model="newTask"
+        type="text"
+        placeholder="Add new task..."
+        class="flex-grow border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+      />
+      <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded hover:bg-indigo-700">
+        Add
+      </button>
+    </form>
+
+    <ul>
+      <li
+        v-for="task in tasks"
+        :key="task.id"
+        class="flex justify-between items-center border-b py-3 px-4 hover:bg-gray-100 transition"
+      >
+        <div class="flex items-center gap-4">
+          <input
+            type="checkbox"
+            :checked="task.is_completed"
+            @change="toggleComplete(task)"
+            class="form-checkbox w-5 h-5"
+          />
+          <span
+            :class="{ 'line-through text-gray-500': task.completed }"
+            class="text-gray-800 font-medium"
+          >
+            {{ task.title }}
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <button
+            @click="deleteTask(task)"
+            class="text-red-600 hover:text-red-800 font-semibold transition cursor-pointer flex items-center gap-2"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              class="w-5 h-5"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          </button>
+        </div>
+      </li>
+    </ul>
+  </div>
+</template>
+
+<script setup>
+import axios from 'axios'
+import { ref, onMounted } from 'vue'
+
+const tasks = ref([])
+const newTask = ref('')
+
+const token = localStorage.getItem('token')
+
+const api = axios.create({
+  baseURL: 'http://localhost:8000/api',
+  headers: { Authorization: `Bearer ${token}` },
+})
+
+async function fetchTasks() {
+  try {
+    const res = await api.get('/tasks')
+    tasks.value = res.data.data
+  } catch (e) {
+    console.error('Fetch tasks error:', e)
+  }
+}
+
+async function addTask() {
+  if (!newTask.value.trim()) return
+  try {
+    const res = await api.post('/tasks', { title: newTask.value })
+    tasks.value.push(res.data.data)
+    newTask.value = ''
+  } catch (e) {
+    console.error('Add task error:', e)
+  }
+}
+
+async function toggleComplete(task) {
+  try {
+    const res = await api.put(`/tasks/${task.id}`, {
+      title: task.title,
+      is_completed: !task.is_completed,
+    })
+    Object.assign(task, res.data.data)
+  } catch (e) {
+    console.error('Toggle complete error:', e)
+  }
+}
+
+async function deleteTask(task) {
+  try {
+    await api.delete(`/tasks/${task.id}`)
+    tasks.value = tasks.value.filter((t) => t.id !== task.id)
+  } catch (e) {
+    console.error('Delete task error:', e)
+  }
+}
+
+onMounted(fetchTasks)
+</script>
