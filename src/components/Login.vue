@@ -1,3 +1,29 @@
+<script setup>
+import { ref } from 'vue'
+import api from '@/api/axios'
+import { useRouter } from 'vue-router'
+
+const email = ref('')
+const password = ref('')
+const error = ref('')
+const router = useRouter()
+
+async function login() {
+  error.value = ''
+  try {
+    const res = await api.post('/login', {
+      email: email.value,
+      password: password.value,
+    })
+    const token = res.data.data.access_token
+    localStorage.setItem('token', token)
+    router.push('/tasks')
+  } catch (err) {
+    error.value = err.response?.data?.message || 'Login failed'
+  }
+}
+</script>
+
 <template>
   <div class="min-h-screen w-full flex items-center justify-center">
     <div class="max-w-md w-full bg-white p-8 rounded-lg shadow-md">
@@ -36,37 +62,10 @@
 
         <button
           type="submit"
-          class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition"
-        >
+          class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition cursor-pointer">
           Sign In
         </button>
       </form>
     </div>
   </div>
 </template>
-
-<script setup>
-import { ref } from 'vue'
-import axios from 'axios'
-import { useRouter } from 'vue-router'
-
-const email = ref('')
-const password = ref('')
-const error = ref('')
-const router = useRouter()
-
-async function login() {
-  error.value = ''
-  try {
-    const res = await axios.post('http://localhost:8000/api/login', {
-      email: email.value,
-      password: password.value,
-    })
-    const token = res.data.data.access_token
-    localStorage.setItem('token', token)
-    router.push('/tasks')
-  } catch (err) {
-    error.value = err.response?.data?.message || 'Login failed'
-  }
-}
-</script>

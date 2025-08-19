@@ -1,5 +1,93 @@
+<script setup>
+import api from '@/api/axios.js'
+import MainMenu from '@/components/MainMenu.vue'
+import { ref, onMounted } from 'vue'
+
+const tasks = ref([])
+const newTask = ref('')
+const editingTaskId = ref(null) 
+const editedTitle = ref('')  
+
+const loading = ref(true)
+
+async function fetchTasks() {
+  loading.value = true;
+  try {
+    const res = await api.get('/tasks')
+    tasks.value = res.data.data
+  } catch (e) {
+    console.error('Fetch tasks error:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function addTask() {
+  if (!newTask.value.trim()) return
+  loading.value = true
+  try {
+    const res = await api.post('/tasks', { title: newTask.value })
+    tasks.value.push(res.data.data)
+    newTask.value = ''
+  } catch (e) {
+    console.error('Add task error:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function toggleComplete(task) {
+  try {
+    const res = await api.put(`/tasks/${task.id}`, {
+      title: task.title,
+      is_completed: !task.is_completed,
+    })
+    Object.assign(task, res.data.data)
+  } catch (e) {
+    console.error('Toggle complete error:', e)
+  }
+}
+
+// New edit method
+function editTask(task) {
+  editingTaskId.value = task.id
+  editedTitle.value = task.title
+}
+
+async function saveEdit(task) {
+  if (!editedTitle.value.trim()) {
+    editingTaskId.value = null
+    return
+  }
+
+  try {
+    await api.put(`/tasks/${task.id}`, { title: editedTitle.value })
+    task.title = editedTitle.value
+  } catch (e) {
+    console.error('Edit task error:', e)
+  } finally {
+    editingTaskId.value = null
+  }
+}
+
+async function deleteTask(task) {
+  loading.value = true
+  try {
+    await api.delete(`/tasks/${task.id}`)
+    tasks.value = tasks.value.filter((t) => t.id !== task.id)
+  } catch (e) {
+    console.error('Delete task error:', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchTasks)
+</script>
+
 <template>
-  <div class="max-w-xl mx-auto mt-16 p-6 rounded-lg bg-white p-6 shadow-md outline outline-black/5">
+  <MainMenu/>
+  <div class="max-w-xl mx-auto mt-16 rounded-lg bg-white p-6 shadow-md outline outline-black/5">
     <h1 class="text-3xl font-bold mb-6">My Tasks</h1>
 
     <form @submit.prevent="addTask" class="flex gap-2 mb-4">
@@ -117,95 +205,3 @@
   </div>
 
 </template>
-
-<script setup>
-import axios from 'axios'
-import { ref, onMounted } from 'vue'
-
-const tasks = ref([])
-const newTask = ref('')
-const editingTaskId = ref(null)  // 👈 define this
-const editedTitle = ref('')  
-
-const token = localStorage.getItem('token')
-
-const api = axios.create({
-  baseURL: 'http://localhost:8000/api',
-  headers: { Authorization: `Bearer ${token}` },
-})
-const loading = ref(true)
-
-async function fetchTasks() {
-  loading.value = true;
-  try {
-    const res = await api.get('/tasks')
-    tasks.value = res.data.data
-  } catch (e) {
-    console.error('Fetch tasks error:', e)
-  } finally {
-    loading.value = false
-  }
-}
-
-async function addTask() {
-  if (!newTask.value.trim()) return
-  loading.value = true
-  try {
-    const res = await api.post('/tasks', { title: newTask.value })
-    tasks.value.push(res.data.data)
-    newTask.value = ''
-  } catch (e) {
-    console.error('Add task error:', e)
-  } finally {
-    loading.value = false
-  }
-}
-
-async function toggleComplete(task) {
-  try {
-    const res = await api.put(`/tasks/${task.id}`, {
-      title: task.title,
-      is_completed: !task.is_completed,
-    })
-    Object.assign(task, res.data.data)
-  } catch (e) {
-    console.error('Toggle complete error:', e)
-  }
-}
-
-// New edit method
-function editTask(task) {
-  editingTaskId.value = task.id
-  editedTitle.value = task.title
-}
-
-async function saveEdit(task) {
-  if (!editedTitle.value.trim()) {
-    editingTaskId.value = null
-    return
-  }
-
-  try {
-    await api.put(`/tasks/${task.id}`, { title: editedTitle.value })
-    task.title = editedTitle.value
-  } catch (e) {
-    console.error('Edit task error:', e)
-  } finally {
-    editingTaskId.value = null
-  }
-}
-
-async function deleteTask(task) {
-  loading.value = true
-  try {
-    await api.delete(`/tasks/${task.id}`)
-    tasks.value = tasks.value.filter((t) => t.id !== task.id)
-  } catch (e) {
-    console.error('Delete task error:', e)
-  } finally {
-    loading.value = false
-  }
-}
-
-onMounted(fetchTasks)
-</script>
