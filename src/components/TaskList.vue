@@ -24,7 +24,7 @@ async function fetchTasks() {
 
 async function addTask() {
   if (!newTask.value.trim()) return
-  loading.value = true
+  // loading.value = true
   try {
     const res = await api.post('/tasks', { title: newTask.value })
     tasks.value.push(res.data.data)
@@ -61,8 +61,9 @@ async function saveEdit(task) {
   }
 
   try {
-    await api.put(`/tasks/${task.id}`, { title: editedTitle.value })
+    await api.put(`/tasks/${task.id}`, { title: editedTitle.value, is_completed:true })
     task.title = editedTitle.value
+    
   } catch (e) {
     console.error('Edit task error:', e)
   } finally {
@@ -71,7 +72,7 @@ async function saveEdit(task) {
 }
 
 async function deleteTask(task) {
-  loading.value = true
+  // loading.value = true
   try {
     await api.delete(`/tasks/${task.id}`)
     tasks.value = tasks.value.filter((t) => t.id !== task.id)
@@ -115,13 +116,13 @@ onMounted(fetchTasks)
             @change="toggleComplete(task)"
             class="form-checkbox w-5 h-5 cursor-pointer"
           />
-  <!-- Inline edit mode -->
+        <!-- Inline edit mode -->
         <template v-if="editingTaskId === task.id">
           <input
             v-model="editedTitle"
             @keyup.enter="saveEdit(task)"
             @blur="saveEdit(task)"
-            class="border rounded px-2 py-1 text-sm"
+            class="border rounded px-2 py-1 text-sm bg-white"
             autofocus
           />
         </template>
@@ -129,7 +130,7 @@ onMounted(fetchTasks)
         <!-- Normal view -->
         <template v-else>
           <span
-            :class="{ 'line-through text-gray-500': task.completed }"
+            :class="{ 'line-through text-gray-500': task.is_completed }"
             class="text-gray-800 font-medium"
           >
             {{ task.title }}
